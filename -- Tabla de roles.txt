@@ -1,68 +1,76 @@
+-- Crear la base de datos
+CREATE DATABASE RadioDB;
+GO
+
+-- Usar la base de datos
+USE RadioDB;
+GO
+
 -- Tabla de roles
 CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     role_name VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- Tabla de usuarios
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hashed TEXT NOT NULL,
     role_id INT NOT NULL,
-    two_factor_enabled BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    two_factor_enabled BIT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 
 -- Tabla de autenticación (doble factor)
 CREATE TABLE tokens_auth (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
     token TEXT NOT NULL UNIQUE,
-    expiration TIMESTAMP NOT NULL,
+    expiration DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabla de usuarios bloqueados
 CREATE TABLE banned_users (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
-    banned_until TIMESTAMP NOT NULL,
+    banned_until DATETIME NOT NULL,
     reason TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabla de configuración de usuarios
 CREATE TABLE user_settings (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
-    notifications_enabled BOOLEAN DEFAULT TRUE,
-    dark_mode BOOLEAN DEFAULT FALSE,
+    notifications_enabled BIT DEFAULT 1,
+    dark_mode BIT DEFAULT 0,
     language VARCHAR(10) DEFAULT 'es',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabla de actividad de usuarios (logs)
 CREATE TABLE activity_logs (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
     action TEXT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    timestamp DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Tabla de la radio (solo una)
 CREATE TABLE radios (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     stream_url TEXT NOT NULL
 );
 
 -- Tabla de programación de la radio (opcional para el futuro)
 CREATE TABLE radio_schedule (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     radio_id INT NOT NULL,
     program_name VARCHAR(100) NOT NULL,
     start_time TIME NOT NULL,
@@ -73,23 +81,46 @@ CREATE TABLE radio_schedule (
 
 -- Tabla de comentarios en la radio
 CREATE TABLE comments (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     user_id INT NOT NULL,
     radio_id INT NOT NULL,
     comment_text TEXT NOT NULL,
     likes INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (radio_id) REFERENCES radios(id) ON DELETE CASCADE
 );
 
 -- Tabla de reportes de comentarios (moderación)
 CREATE TABLE reports (
-    id SERIAL PRIMARY KEY,
+    id INT IDENTITY(1,1) PRIMARY KEY,
     comment_id INT NOT NULL,
     user_id INT NOT NULL,
     reason TEXT NOT NULL,
-    reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reported_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Tabla de mensajes entre padres y profesores
+CREATE TABLE messages (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    sender_id INT NOT NULL,  -- Puede ser un padre o un profesor
+    receiver_id INT NOT NULL,  -- Puede ser un padre o un profesor
+    message_text TEXT NOT NULL,
+    sent_at DATETIME DEFAULT GETDATE(),
+    is_read BIT DEFAULT 0,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de citas entre padres y profesores
+CREATE TABLE appointments (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    parent_id INT NOT NULL,
+    teacher_id INT NOT NULL,
+    appointment_date DATETIME NOT NULL,
+    status VARCHAR(20) DEFAULT 'pendiente',  -- pendiente, confirmada, cancelada
+    reason TEXT,
+    FOREIGN KEY (parent_id) REFE
+
